@@ -22,6 +22,23 @@ peft
 sentencepiece
 tqdm
 transformers
+
+# 新环境（Python3.9）
+conda create -n lcrec python=3.9 -y
+conda activate lcrec
+
+# 安装 pytorch 2.0.0 + cu118
+conda install -y pytorch==2.0.0 torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+
+# 其它依赖
+pip install accelerate evaluate peft sentencepiece tqdm transformers
+
+# 安装 bitsandbytes（>=0.43）
+pip install bitsandbytes==0.45.0
+
+# deepspeed
+pip install deepspeed
+
 ```
 
 ## Model Checkpoint
@@ -32,16 +49,31 @@ The delta weights on the three datasets can be downloaded from huggingface hub (
 2. Use the following scripts to get LC-Rec weights by applying our delta.
 
 ```shell
-python -m convert/merge_delta.py \
-    --base-model-path /path/to/llama-7b \
-    --target-model-path /path/output/lc-rec \
-    --delta-path bwzheng0324/lc-rec-games-delta
+python convert/merge_delta.py \
+    --base-model-path llama-7b \
+    --target-model-path /mnt/d/LC-Rec/ckpt/Games \
+    --delta-path Games-delta
+    
+C:\Users\RTX\AppData\Local\Temp\C0CB8EDE-BAD1-445A-8A13-C10A8D19F41C\swap.vhdx
 ```
+模型存储到ckpt中：
+```shell
+(lcrec) root@DESKTOP-IG5PJ98:/mnt/d/LC-Rec# cd ckpt/
+(lcrec) root@DESKTOP-IG5PJ98:/mnt/d/LC-Rec/ckpt# ls
+Games
+```
+
 
 ## Dataset
 
 We use three datasets in our paper, all of which have been uploaded to [Google Drive](https://drive.google.com/drive/folders/1RcJ2M1l5zWPHYuGd9l5Gibcs5w5aI3y6?usp=sharing) 
 
+数据集下载到data目录中:
+```shell
+(lcrec) root@DESKTOP-IG5PJ98:/mnt/d/LC-Rec# cd data
+(lcrec) root@DESKTOP-IG5PJ98:/mnt/d/LC-Rec/data# ls
+Arts  Games  Instruments
+```
 ## Train
 
 The detailed scripts for all three datasets are in `run.sh`:
@@ -82,6 +114,10 @@ cd ..
 Test with a single GPU:
 
 ```shell
+#DATASET=Games
+#DATA_PATH=Games
+#CKPT_PATH="/mnt/d/LC-Rec/Games"
+#RESULTS_FILE="/mnt/d/LC-Rec/Games/result.json"
 DATASET=Games
 DATA_PATH=./data
 CKPT_PATH=./ckpt/$DATASET/

@@ -5,6 +5,50 @@ import sys
 from typing import List
 
 import torch
+try:
+    import inspect
+    import torch
+    p = getattr(torch.utils, "_pytree", None)
+    if p is not None and hasattr(p, "_register_pytree_node") and not hasattr(p, "register_pytree_node"):
+        _under = p._register_pytree_node
+        # 尝试获取底层函数签名（若失败也不抛）
+        try:
+            _sig = inspect.signature(_under)
+        except Exception:
+            _sig = None
+
+        def _compat_register_pytree_node(*args, **kwargs):
+            """
+            兼容性 wrapper：
+            - 若 transformers 用 keyword 方式调用（例如 serialized_type_name / pytree_node / to_iterable / from_iterable），
+              我们将按照老签名 (pytree_node, to_iterable, from_iterable) 调用底层函数。
+            - 否则尝试直接透传，出错再尝试 positional 调用。
+            """
+            # transformers 常会传入 serialized_type_name 和 pytree_node（以及可选 to_iterable/from_iterable）
+            if kwargs:
+                # 优先从 kwargs 中取常见命名
+                node = kwargs.get("pytree_node", kwargs.get("node", None))
+                to_fn = kwargs.get("to_iterable", None)
+                from_fn = kwargs.get("from_iterable", None)
+                # 如果底层只接受 positional 三个参数，按顺序传
+                try:
+                    if node is not None:
+                        return _under(node, to_fn, from_fn)
+                except TypeError:
+                    # 若直接调用失败，再回退到直接调用尝试
+                    pass
+            # 尝试直接传入 args/kwargs（最直接）
+            try:
+                return _under(*args, **kwargs)
+            except TypeError:
+                # 最后尝试只用 positional args
+                return _under(*args)
+
+        # 绑定为公开名字
+        p.register_pytree_node = _compat_register_pytree_node
+except Exception:
+    # 不要抛异常阻断程序；若补丁失败，后续做重装 Torch
+    pass
 import transformers
 from peft import PeftModel
 from torch.utils.data import DataLoader
