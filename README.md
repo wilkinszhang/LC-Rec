@@ -138,6 +138,10 @@ python test.py \
 Test with multiple GPUs:
 
 ```shell
+#DATASET=Games
+#DATA_PATH=./data
+#CKPT_PATH=./ckpt/$DATASET/
+#RESULTS_FILE=./results/$DATASET/result.json
 DATASET=Games
 DATA_PATH=./data
 CKPT_PATH=./ckpt/$DATASET/
